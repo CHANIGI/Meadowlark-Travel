@@ -2,48 +2,53 @@
 
 const express = require('express')
 const {engine} = require('express-handlebars')
+const handlers = require('./lib/handlers')
+const weatherMiddleware = require('./lib/middleware/weather')
+const bodyParser = require('body-parser')
 const app = express()
 const port = 3000
-
-const fortunes = [
-  "Conquer your fears or they will conquer you",
-  "Rivers need springs",
-  "Do not fear what you don't know",
-  "You will have a pleasant surprise",
-  "Whenever possible, keep it simple",
-]
-
 
 //핸들바 뷰 엔진 설정
 app.engine('handlebars', engine({
   defaultLayout : 'main',
+  helpers: {
+    section: function(name, options){
+      if(!this._sections)this._sections = {}
+      this._sections[name] = options.fn(this)
+      return null
+    }
+  }
 }))
 app.set('view engine', 'handlebars')
 
 app.use(express.static(__dirname+'/public'))
+app.use(weatherMiddleware)
+app.use(bodyParser.json())
+app.use(bodyParser.urlencoded({extended:true}))
 
-app.get('/', (req, res) => {
-  res.render('home')
-})
-app.get('/about', (req, res) => {
-  const randomFortune = fortunes[Math.floor(Math.random()*fortunes.length)]
-  res.render('about', {fortune: randomFortune})
-})
+//라우팅
+app.get('/', handlers.home)
+app.get('/about', handlers.about)
+
+app.get('/newsletter-signup', handlers.newsletterSignUp)
+app.post('/newsletter-signup/process', handlers.newsletterSignUpProcess)
+app.get('/newsletter-signup-thank-you', handlers.newsletterSignUpThankYou)
+
+app.get('/newsletter', handlers.newsletter)
+app.post('/api/newsletter-signup', handlers.api.newsletterSignUp)
+
 
 //custom 404 page
-app.use((req, res) => {
-  res.status(404)
-  res.render('404')
-})
-
+app.use(handlers.notFound)
 //custom 500 page
-app.use((err, req, res, next) => {
-  console.error(err.message)
-  res.status(500)
-  res.render('500')
-})
+app.use(handlers.serverError)
 
-app.listen(port, () => {
-  console.log(`Express strated on port ${port}`
-  +'press Ctrl+C to terminate...')
-})
+if(require.main === module){
+  app.listen(port, () => {
+    console.log(`Express started on http://localhost:${port}`+
+    ';press Ctrl+C to terminate')
+  })
+}
+else{
+  module.exports = app
+}

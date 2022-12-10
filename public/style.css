@@ -1,0 +1,18 @@
+.form-control {
+  width: 276px;
+}
+
+h2 {
+  display: grid;
+  place-items: center;
+}
+
+.form-horizontal {
+  display: grid;
+  place-items: center;
+  margin-top: 113px;
+}
+
+#register1 {
+  margin-top: 16px;
+}
